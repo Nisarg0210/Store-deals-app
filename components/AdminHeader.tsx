@@ -6,11 +6,12 @@ import { useState } from 'react';
 
 interface AdminHeaderProps {
   email?: string | null;
+  displayName?: string | null;
   activeDeals: number;
   totalDeals: number;
 }
 
-export default function AdminHeader({ email, activeDeals, totalDeals }: AdminHeaderProps) {
+export default function AdminHeader({ email, displayName, activeDeals, totalDeals }: AdminHeaderProps) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -26,13 +27,15 @@ export default function AdminHeader({ email, activeDeals, totalDeals }: AdminHea
 
   return (
     <header className="admin-header">
-      <div className="container flex-between" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
+      <div className="container flex-between admin-header__row">
         {/* Left: Brand */}
         <div className="admin-header__brand">
-          <div className="admin-header__logo">🏷️</div>
+          <div className="admin-header__logo-wrap" aria-hidden>
+            <span className="admin-header__logo">🏷️</span>
+          </div>
           <div>
-            <h1 className="admin-header__title">Deals Admin</h1>
-            <p className="admin-header__sub">Manage your store deals</p>
+            <h1 className="admin-header__title">Deals Dashboard</h1>
+            <p className="admin-header__sub">Staff · real-time store deals</p>
           </div>
         </div>
 
@@ -59,10 +62,13 @@ export default function AdminHeader({ email, activeDeals, totalDeals }: AdminHea
         {/* Right: User + Sign out */}
         <div className="admin-header__user">
           <div className="admin-header__avatar">
-            {email?.[0]?.toUpperCase() ?? 'A'}
+            {(displayName?.[0] || email?.[0] || 'A').toUpperCase()}
           </div>
           <div className="admin-header__email-wrap">
-            <span className="admin-header__email">{email}</span>
+            <span className="admin-header__email">{displayName || email}</span>
+            {displayName && email && (
+              <span className="admin-header__email-secondary">{email}</span>
+            )}
             <a href="/" target="_blank" className="admin-header__view-link">
               👁 View Public Page ↗
             </a>

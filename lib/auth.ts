@@ -4,6 +4,15 @@ import {
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
+
+/** Display name for staff attribution (Firebase displayName or email local-part) */
+export function getStaffDisplayName(user: User | null | undefined): string {
+  if (!user) return 'Staff';
+  const name = user.displayName?.trim();
+  if (name) return name;
+  const email = user.email?.split('@')[0];
+  return email || 'Staff';
+}
 import { useEffect, useState } from 'react';
 import { auth } from './firebase';
 

@@ -148,11 +148,15 @@ export default function DealForm({ deal, onSave, onClose }: DealFormProps) {
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label" htmlFor="df-badge">Badge</label>
+                <label className="form-label" htmlFor="df-badge">Deal type</label>
                 <select id="df-badge" className="form-select"
-                  value={form.badge} onChange={e => set('badge', e.target.value as DealBadge)}>
+                  value={form.badge} onChange={e => set('badge', e.target.value as DealBadge)}
+                  aria-describedby="df-badge-hint">
                   {BADGES.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
+                <p id="df-badge-hint" className="form-hint">
+                  Shown only in the admin portal — customers never see this label.
+                </p>
               </div>
             </div>
 

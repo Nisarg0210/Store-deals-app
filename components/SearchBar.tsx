@@ -7,17 +7,20 @@ interface SearchBarProps {
 
 export default function SearchBar({ searchQuery, onSearchChange }: SearchBarProps) {
   return (
-    <div className="search-bar-wrapper" style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-      <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
+    <div className="search-bar-wrapper">
+      <span className="search-bar-wrapper__icon" aria-hidden>
         🔍
       </span>
       <input
-        type="text"
+        type="search"
+        enterKeyHint="search"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
         placeholder="Search deals..."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         className="form-input"
-        style={{ paddingLeft: '2.5rem' }}
       />
     </div>
   );

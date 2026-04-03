@@ -33,6 +33,8 @@ function snapshotToDeals(snapshot: QuerySnapshot<DocumentData>): Deal[] {
       imageUrl: data.imageUrl,
       expiryDate: data.expiryDate,
       active: data.active,
+      keptByName: data.keptByName,
+      keptByEmail: data.keptByEmail,
       createdAt: data.createdAt instanceof Timestamp
         ? data.createdAt.toDate().toISOString()
         : data.createdAt ?? new Date().toISOString(),
@@ -81,10 +83,19 @@ export function subscribeToAllDeals(callback: (deals: Deal[]) => void): () => vo
   });
 }
 
+export type StaffAttribution = {
+  keptByName: string;
+  keptByEmail?: string;
+};
+
 /** Create a new deal */
-export async function createDeal(data: DealFormData): Promise<string> {
+export async function createDeal(data: DealFormData, staff?: StaffAttribution): Promise<string> {
   const docRef = await addDoc(collection(db, COLLECTION), {
     ...data,
+    ...(staff && {
+      keptByName: staff.keptByName,
+      ...(staff.keptByEmail ? { keptByEmail: staff.keptByEmail } : {}),
+    }),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -92,10 +103,18 @@ export async function createDeal(data: DealFormData): Promise<string> {
 }
 
 /** Update an existing deal */
-export async function updateDeal(id: string, data: Partial<DealFormData>): Promise<void> {
+export async function updateDeal(
+  id: string,
+  data: Partial<DealFormData>,
+  staff?: StaffAttribution
+): Promise<void> {
   const ref = doc(db, COLLECTION, id);
   await updateDoc(ref, {
     ...data,
+    ...(staff && {
+      keptByName: staff.keptByName,
+      ...(staff.keptByEmail ? { keptByEmail: staff.keptByEmail } : {}),
+    }),
     updatedAt: serverTimestamp(),
   });
 }
@@ -140,4 +159,34 @@ export function getExpiryLabel(expiryDate: string | undefined): string | null {
   if (diffH > 0) return `${diffH}h left`;
   const diffM = Math.floor(diffMs / (1000 * 60));
   return `${diffM}m left`;
+}
+/** Get granular urgency status based on expiry date */
+export function getUrgencyStatus(expiryDate: string | undefined): { label: string; type: 'urgent' | 'high' | 'medium' } | null {
+  if (!expiryDate) return null;
+  const expiry = new Date(expiryDate);
+  const now = new Date();
+  const diffMs = expiry.getTime() - now.getTime();
+
+  if (diffMs <= 0) return null;
+
+  const isToday = expiry.toDateString() === now.toDateString();
+  const diffH = diffMs / (1000 * 3600);
+
+  if (isToday) {
+    return { label: '⏳ Ending Today', type: 'urgent' };
+  }
+  if (diffH < 24) {
+    return { label: '⚡ Last Chance', type: 'high' };
+  }
+  if (diffH < 72) {
+    return { label: '🔥 Ending Soon', type: 'medium' };
+  }
+
+  return null;
+}
+
+/** Check if a deal has reached its expiry date */
+export function isExpired(expiryDate: string | undefined): boolean {
+  if (!expiryDate) return false;
+  return new Date(expiryDate).getTime() <= Date.now();
 }

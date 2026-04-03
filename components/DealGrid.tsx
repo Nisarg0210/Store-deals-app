@@ -16,14 +16,16 @@ interface DealGridProps {
   onEdit?: (deal: Deal) => void;
   onDelete?: (deal: Deal) => void;
   onToggle?: (deal: Deal) => void;
+  hideControls?: boolean;
 }
 
-export default function DealGrid({ deals, loading, isAdmin, onEdit, onDelete, onToggle }: DealGridProps) {
+export default function DealGrid({ deals, loading, isAdmin, onEdit, onDelete, onToggle, hideControls }: DealGridProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<DealCategory | 'All'>('All');
   const [sort, setSort] = useState<SortOption>('newest');
 
   const filtered = useMemo(() => {
+    if (hideControls) return deals;
     let list = [...deals];
 
     // Search
@@ -67,8 +69,10 @@ export default function DealGrid({ deals, loading, isAdmin, onEdit, onDelete, on
 
   return (
     <div className="deal-grid-wrapper">
-      {/* Controls */}
-      <div className="deal-grid__controls">
+      {!hideControls && (
+        <>
+          {/* Controls */}
+          <div className="deal-grid__controls">
         {/* Search */}
         <div className="deal-grid__search-wrap">
           <span className="deal-grid__search-icon">🔍</span>
@@ -120,9 +124,11 @@ export default function DealGrid({ deals, loading, isAdmin, onEdit, onDelete, on
           );
         })}
       </div>
+        </>
+      )}
 
       {/* Results info */}
-      {!loading && (
+      {!loading && !hideControls && (
         <p className="deal-grid__count">
           {filtered.length === 0
             ? 'No deals found'

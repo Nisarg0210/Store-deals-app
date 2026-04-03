@@ -1,7 +1,7 @@
 'use client';
 
 import { Deal } from '@/lib/types';
-import { getDiscountPercent, getExpiryLabel, isExpiringSoon } from '@/lib/deals';
+import { getDiscountPercent, getExpiryLabel, getUrgencyStatus, isExpired } from '@/lib/deals';
 
 interface DealCardProps {
   deal: Deal;
@@ -29,12 +29,12 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 export default function DealCard({ deal, onEdit, onDelete, onToggle, isAdmin }: DealCardProps) {
   const discount = getDiscountPercent(deal.originalPrice, deal.discountedPrice);
+  const urgency = getUrgencyStatus(deal.expiryDate);
   const expiryLabel = getExpiryLabel(deal.expiryDate);
-  const expiringSoon = isExpiringSoon(deal.expiryDate, 24);
   const categoryIcon = CATEGORY_ICONS[deal.category] ?? '📦';
 
   return (
-    <div className={`deal-card card ${!deal.active && isAdmin ? 'deal-card--inactive' : ''}`}
+    <div className={`deal-card card ${(!deal.active || isExpired(deal.expiryDate)) && isAdmin ? 'deal-card--inactive' : ''}`}
          style={{ animationDelay: '0ms' }}>
 
       {/* Image / Placeholder */}
@@ -55,20 +55,31 @@ export default function DealCard({ deal, onEdit, onDelete, onToggle, isAdmin }: 
           </div>
         )}
 
-        {/* Expiry urgent indicator */}
-        {expiringSoon && (
-          <div className="deal-card__expiry-urgent">
-            ⚡ {expiryLabel}
+        {/* Urgency Badge */}
+        {urgency && (
+          <div className={`deal-card__urgency deal-card__urgency--${urgency.type}`}>
+            {urgency.label}
           </div>
         )}
       </div>
 
       {/* Body */}
       <div className="deal-card__body">
-        <div className="deal-card__meta">
-          <span className={`badge ${BADGE_CLASS[deal.badge] ?? ''}`}>●&nbsp;{deal.badge}</span>
+        <div className={`deal-card__meta ${!isAdmin ? 'deal-card__meta--public' : ''}`}>
+          {isAdmin && (
+            <span className={`badge ${BADGE_CLASS[deal.badge] ?? ''}`}>●&nbsp;{deal.badge}</span>
+          )}
           <span className="deal-card__category">{categoryIcon} {deal.category}</span>
         </div>
+
+        {isAdmin && (
+          <div className="deal-card__kept-by" title={deal.keptByEmail ?? undefined}>
+            <span className="deal-card__kept-by-icon" aria-hidden>👤</span>
+            <span>
+              Kept by <strong>{deal.keptByName?.trim() || '—'}</strong>
+            </span>
+          </div>
+        )}
 
         <h3 className="deal-card__name">{deal.name}</h3>
         <p className="deal-card__desc">{deal.description}</p>
@@ -80,7 +91,7 @@ export default function DealCard({ deal, onEdit, onDelete, onToggle, isAdmin }: 
           )}
         </div>
 
-        {expiryLabel && !expiringSoon && (
+        {expiryLabel && !urgency && (
           <div className="deal-card__expiry">🕐 {expiryLabel}</div>
         )}
 

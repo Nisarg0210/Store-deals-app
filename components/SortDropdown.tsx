@@ -13,8 +13,7 @@ export default function SortDropdown({ sortOption, onSortChange }: SortDropdownP
       <select
         value={sortOption}
         onChange={(e) => onSortChange(e.target.value as SortOption)}
-        className="form-input"
-        style={{ width: '100%', minWidth: '160px', cursor: 'pointer' }}
+        className="form-input sort-dropdown__select"
       >
         <option value="newest">Newest First</option>
         <option value="price-asc">Price: Low to High</option>

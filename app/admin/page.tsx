@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuthState } from '@/lib/auth';
-import { createDeal, updateDeal, deleteDeal, toggleDeal, subscribeToAllDeals } from '@/lib/deals';
+import type { User } from 'firebase/auth';
+import { useAuthState, getStaffDisplayName } from '@/lib/auth';
+import { createDeal, updateDeal, deleteDeal, toggleDeal, subscribeToAllDeals, isExpired } from '@/lib/deals';
 import { Deal, DealFormData } from '@/lib/types';
 import AdminHeader from '@/components/AdminHeader';
 import DealGrid from '@/components/DealGrid';
@@ -20,7 +21,8 @@ interface ToastState {
 }
 
 /* ── Admin Dashboard ─────────────────────────────────────────────────── */
-function AdminDashboard({ userEmail }: { userEmail: string }) {
+function AdminDashboard({ user }: { user: User }) {
+  const userEmail = user.email ?? '';
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -52,11 +54,15 @@ function AdminDashboard({ userEmail }: { userEmail: string }) {
 
   /* ── CRUD handlers ─ */
   async function handleSave(data: DealFormData) {
+    const staff = {
+      keptByName: getStaffDisplayName(user),
+      keptByEmail: user.email ?? undefined,
+    };
     if (editingDeal) {
-      await updateDeal(editingDeal.id, data);
+      await updateDeal(editingDeal.id, data, staff);
       showToast('Deal updated successfully!');
     } else {
-      await createDeal(data);
+      await createDeal(data, staff);
       showToast('New deal created!');
     }
     setFormOpen(false);
@@ -93,13 +99,19 @@ function AdminDashboard({ userEmail }: { userEmail: string }) {
     }
   }
 
-  const activeDeals = deals.filter(d => d.active).length;
+  const activeDealsCount = deals.filter(d => d.active && !isExpired(d.expiryDate)).length;
+  const hiddenDealsCount = deals.length - activeDealsCount;
 
   return (
     <>
       <div className="bg-mesh" />
 
-      <AdminHeader email={userEmail} activeDeals={activeDeals} totalDeals={deals.length} />
+      <AdminHeader
+        email={userEmail}
+        displayName={user.displayName ?? undefined}
+        activeDeals={activeDealsCount}
+        totalDeals={deals.length}
+      />
 
       {/* ── Tab Bar ─────────────────────────────────────────────────── */}
       <div className="admin-tabs">
@@ -133,7 +145,7 @@ function AdminDashboard({ userEmail }: { userEmail: string }) {
                 <div>
                   <h2 style={{ fontSize: '1.25rem' }}>All Deals</h2>
                   <p style={{ fontSize: '0.85rem' }}>
-                    {activeDeals} active · {deals.length - activeDeals} hidden
+                    {activeDealsCount} active · {hiddenDealsCount} hidden
                   </p>
                 </div>
                 <button
@@ -168,7 +180,7 @@ function AdminDashboard({ userEmail }: { userEmail: string }) {
                 <div className="divider" style={{ margin: '1rem 0' }} />
                 <h3>💡 Tips</h3>
                 <ul>
-                  <li>Use <strong>Near Expiry</strong> badge to highlight items expiring soon.</li>
+                  <li>Use <strong>Deal type</strong> (e.g. Near Expiry) when editing a deal — it appears only here for staff, not on the public board.</li>
                   <li>Set an <strong>Expiry Date</strong> so customers see a countdown timer.</li>
                   <li>Upload product photos for better visual appeal.</li>
                   <li>Use the <strong>Biggest Discount</strong> sort to promote high-value deals.</li>
@@ -222,5 +234,5 @@ function AdminDashboard({ userEmail }: { userEmail: string }) {
 export default function AdminPage() {
   const { user } = useAuthState();
   if (!user) return null; // Handled by AdminGuard wrapper
-  return <AdminDashboard userEmail={user.email ?? ''} />;
+  return <AdminDashboard user={user} />;
 }

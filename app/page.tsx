@@ -17,13 +17,21 @@ export default function PublicPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
 
-  const categories = useMemo(() => {
-    const cats = new Set(deals.map(d => d.category));
-    return Array.from(cats);
+  const unexpiredDeals = useMemo(() => {
+    const now = Date.now();
+    return deals.filter(d => {
+      if (!d.expiryDate) return true;
+      return new Date(d.expiryDate).getTime() > now;
+    });
   }, [deals]);
 
+  const categories = useMemo(() => {
+    const cats = new Set(unexpiredDeals.map(d => d.category));
+    return Array.from(cats);
+  }, [unexpiredDeals]);
+
   const filteredDeals = useMemo(() => {
-    let result = deals;
+    let result = unexpiredDeals;
     
     if (selectedCategory !== 'All') {
       result = result.filter(d => d.category === selectedCategory);
@@ -51,7 +59,7 @@ export default function PublicPage() {
       }
       return 0;
     });
-  }, [deals, selectedCategory, searchQuery, sortOption]);
+  }, [unexpiredDeals, selectedCategory, searchQuery, sortOption]);
 
   useEffect(() => {
     const unsub = subscribeToActiveDeals((d) => {
@@ -62,11 +70,27 @@ export default function PublicPage() {
     return unsub;
   }, []);
 
-  const totalSavings = deals.reduce((sum, d) => sum + (d.originalPrice - d.discountedPrice), 0);
+  const totalSavings = unexpiredDeals.reduce((sum, d) => sum + (d.originalPrice - d.discountedPrice), 0);
 
   return (
     <>
       <div className="bg-mesh" />
+
+      <div className="public-topbar">
+        <div className="container public-topbar__inner">
+          <a href="/" className="public-topbar__brand">
+            <span className="public-topbar__mark" aria-hidden>🏪</span>
+            <span>
+              <span className="public-topbar__name">The Market ON James North</span>
+              <span className="public-topbar__tagline">Today&apos;s offers</span>
+            </span>
+          </a>
+          <div className="public-topbar__live">
+            <span className="live-dot" aria-hidden />
+            <span>Live</span>
+          </div>
+        </div>
+      </div>
 
       {/* ── Hero ─────────────────────────────────────────────────────── */}
       <header className="public-hero">
@@ -74,21 +98,21 @@ export default function PublicPage() {
           <div className="public-hero__inner animate-fadeInUp">
             <div className="public-hero__badge">
               <span className="live-dot" />
-              Live Deals Board
+              Deals board
             </div>
 
             <h1 className="public-hero__title">
-              The Market ON James North <span className="gradient-text">Deals</span>
+              Save more on <span className="gradient-text">groceries &amp; more</span>
             </h1>
             <p className="public-hero__sub">
-              Fresh deals updated in real time — scan the QR code at the entrance to share with friends.
+              Updated in real time for everyone who scans our in-store QR code — no app required.
             </p>
 
             {/* Stats strip */}
-            {!loading && deals.length > 0 && (
+            {!loading && unexpiredDeals.length > 0 && (
               <div className="public-hero__stats animate-fadeInUp stagger-2">
                 <div className="hero-stat">
-                  <span className="hero-stat__val">{deals.length}</span>
+                  <span className="hero-stat__val">{unexpiredDeals.length}</span>
                   <span className="hero-stat__label">Active Deals</span>
                 </div>
                 <div className="hero-stat__sep" />
@@ -101,7 +125,7 @@ export default function PublicPage() {
                 <div className="hero-stat__sep" />
                 <div className="hero-stat">
                   <span className="hero-stat__val" style={{ color: 'var(--amber)' }}>
-                    {Math.round(deals.reduce((s, d) => s + (d.originalPrice > 0 ? (d.originalPrice - d.discountedPrice) / d.originalPrice * 100 : 0), 0) / (deals.length || 1))}%
+                    {Math.round(unexpiredDeals.reduce((s, d) => s + (d.originalPrice > 0 ? (d.originalPrice - d.discountedPrice) / d.originalPrice * 100 : 0), 0) / (unexpiredDeals.length || 1))}%
                   </span>
                   <span className="hero-stat__label">Avg Discount</span>
                 </div>
@@ -135,7 +159,7 @@ export default function PublicPage() {
                 selectedCategory={selectedCategory} 
                 onSelectCategory={setSelectedCategory} 
               />
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+              <div className="public-filters">
                 <SearchBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
                 <SortDropdown sortOption={sortOption} onSortChange={setSortOption} />
               </div>
@@ -143,10 +167,10 @@ export default function PublicPage() {
               {filteredDeals.length === 0 ? (
                 <div className="empty-state" style={{ padding: '3rem 1rem' }}>
                   <p>No deals match your search criteria.</p>
-                  <button className="btn btn-secondary mt-2" onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}>Clear Filters</button>
+                  <button type="button" className="btn btn-secondary public-clear-filters" onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}>Clear Filters</button>
                 </div>
               ) : (
-                <DealGrid deals={filteredDeals} loading={false} />
+                <DealGrid deals={filteredDeals} loading={false} hideControls />
               )}
             </div>
           )}
@@ -156,8 +180,8 @@ export default function PublicPage() {
       {/* ── Footer ───────────────────────────────────────────────────── */}
       <footer className="public-footer">
         <div className="container">
-          <p>🏪 The Market ON James North Deals &nbsp;·&nbsp; Powered by real-time updates</p>
-          <a href="/admin" className="public-footer__admin-link">Staff Login →</a>
+          <p className="public-footer__text">The Market ON James North · offers update live</p>
+          <a href="/admin" className="public-footer__admin-link">Staff sign in</a>
         </div>
       </footer>
     </>

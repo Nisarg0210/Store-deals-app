@@ -36,6 +36,9 @@ export interface Deal {
   imageUrl?: string;
   expiryDate?: string; // ISO date string
   active: boolean;
+  /** Staff who last created/updated this deal (admin-only display) */
+  keptByName?: string;
+  keptByEmail?: string;
   createdAt: string; // ISO date string
   updatedAt: string;
 }
