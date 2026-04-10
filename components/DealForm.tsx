@@ -69,7 +69,8 @@ export default function DealForm({ deal, onSave, onClose }: DealFormProps) {
     setUploading(true);
     setError('');
     try {
-      const storageRef = ref(storage, `deals/${Date.now()}_${file.name}`);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'image';
+      const storageRef = ref(storage, `deals/${Date.now()}_${safeName}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       set('imageUrl', url);

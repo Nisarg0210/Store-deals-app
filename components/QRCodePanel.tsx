@@ -56,7 +56,7 @@ export default function QRCodePanel({ url, storeName = 'The Market ON James Nort
       link.href = canvas.toDataURL('image/png');
       link.click();
     };
-    img.src = 'data:image/svg+xml;base64,' + btoa(data);
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(data)));
   }, [size, storeName]);
 
   return (

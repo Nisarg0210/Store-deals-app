@@ -24,6 +24,22 @@ export const metadata: Metadata = {
   title: "The Market ON James North — Today's Best Offers",
   description: 'Scan QR codes to discover the latest store deals, clearance items, and limited-time offers near you.',
   keywords: ['store deals', 'clearance', 'discounts', 'QR code deals', 'near expiry deals'],
+  applicationName: 'James North Deals',
+  appleWebApp: {
+    capable: true,
+    title: 'James North Deals',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/icon-192.png', sizes: '180x180', type: 'image/png' }],
+  },
   openGraph: {
     title: "The Market ON James North — Today's Best Offers",
     description: 'Find the best deals at your local store — clearance, near expiry, hot deals and more.',
