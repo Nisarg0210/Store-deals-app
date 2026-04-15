@@ -6,13 +6,14 @@ import { storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const BADGES: DealBadge[] = [
-  'Limited Time','Clearance','Near Expiry','Franchise Deal',
-  'Store Clearance','Hot Deal','Weekend Special',
+  'Store Clearance', 'Franchise Deal', 'Manager Special',
+  'NearExpiry Deal', 'Weekend Special', 'Limited Time',
 ];
 
 const CATEGORIES: DealCategory[] = [
-  'Snacks','Drinks','Dairy','Frozen','Bakery',
-  'Personal Care','Household','Candy','Health','Other',
+  'Bakery', 'Beverages', 'Chips', 'Chocolates & Candy',
+  'Cleaning GM', 'Dairy Cooler', 'Frozen', 'Grocery',
+  'Medicine', 'Pet', 'Snacks', 'Prepared Foods', 'Alcohol',
 ];
 
 interface DealFormProps {
@@ -25,7 +26,7 @@ const EMPTY: DealFormData = {
   name: '',
   description: '',
   category: 'Snacks',
-  badge: 'Hot Deal',
+  badge: 'Limited Time',
   originalPrice: 0,
   discountedPrice: 0,
   imageUrl: '',
@@ -69,9 +70,11 @@ export default function DealForm({ deal, onSave, onClose }: DealFormProps) {
     setUploading(true);
     setError('');
     try {
+      // Compress image client-side before uploading
+      const compressed = await compressImage(file, 1200, 0.82);
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'image';
       const storageRef = ref(storage, `deals/${Date.now()}_${safeName}`);
-      await uploadBytes(storageRef, file);
+      await uploadBytes(storageRef, compressed);
       const url = await getDownloadURL(storageRef);
       set('imageUrl', url);
     } catch {
@@ -79,6 +82,31 @@ export default function DealForm({ deal, onSave, onClose }: DealFormProps) {
     } finally {
       setUploading(false);
     }
+  }
+
+  /** Compress an image to maxWidth px and given quality (0–1) before upload */
+  function compressImage(file: File, maxWidth: number, quality: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas not supported'));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : reject(new Error('Compression failed')),
+          file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+      img.src = url;
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -95,7 +123,12 @@ export default function DealForm({ deal, onSave, onClose }: DealFormProps) {
       originalPrice: Number(form.originalPrice),
       discountedPrice: Number(form.discountedPrice),
       expiryDate: form.expiryDate
-        ? new Date(form.expiryDate).toISOString()
+        ? (() => {
+            // Store as end-of-day LOCAL time so a deal set to "Apr 16"
+            // stays visible all day April 16 in any timezone.
+            const [y, m, d] = form.expiryDate.split('-').map(Number);
+            return new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
+          })()
         : undefined,
       imageUrl: form.imageUrl || undefined,
     };

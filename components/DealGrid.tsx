@@ -5,8 +5,9 @@ import { Deal, DealCategory, SortOption } from '@/lib/types';
 import DealCard from './DealCard';
 
 const CATEGORIES: DealCategory[] = [
-  'Snacks','Drinks','Dairy','Frozen','Bakery',
-  'Personal Care','Household','Candy','Health','Other',
+  'Bakery', 'Beverages', 'Chips', 'Chocolates & Candy',
+  'Cleaning GM', 'Dairy Cooler', 'Frozen', 'Grocery',
+  'Medicine', 'Pet', 'Snacks', 'Prepared Foods', 'Alcohol',
 ];
 
 interface DealGridProps {

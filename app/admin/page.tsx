@@ -30,6 +30,7 @@ function AdminDashboard({ user }: { user: User }) {
   const [deleteConfirm, setDeleteConfirm] = useState<Deal | null>(null);
   const [toasts, setToasts] = useState<ToastState[]>([]);
   const [tab, setTab] = useState<'deals' | 'qr'>('deals');
+  const [dealFilter, setDealFilter] = useState<'all' | 'active' | 'hidden'>('all');
 
   const publicUrl = typeof window !== 'undefined'
     ? window.location.origin
@@ -100,7 +101,13 @@ function AdminDashboard({ user }: { user: User }) {
   }
 
   const activeDealsCount = deals.filter(d => d.active && !isExpired(d.expiryDate)).length;
-  const hiddenDealsCount = deals.length - activeDealsCount;
+  const hiddenDealsCount = deals.filter(d => !d.active || isExpired(d.expiryDate)).length;
+
+  const filteredDeals = deals.filter(d => {
+    if (dealFilter === 'active') return d.active && !isExpired(d.expiryDate);
+    if (dealFilter === 'hidden') return !d.active || isExpired(d.expiryDate);
+    return true;
+  });
 
   return (
     <>
@@ -157,8 +164,33 @@ function AdminDashboard({ user }: { user: User }) {
                 </button>
               </div>
 
+              {/* Active / Hidden filter */}
+              <div className="admin-deal-filter">
+                <button
+                  id="filter-all"
+                  className={`admin-filter-btn ${dealFilter === 'all' ? 'admin-filter-btn--active' : ''}`}
+                  onClick={() => setDealFilter('all')}
+                >
+                  All <span className="admin-filter-count">{deals.length}</span>
+                </button>
+                <button
+                  id="filter-active"
+                  className={`admin-filter-btn admin-filter-btn--green ${dealFilter === 'active' ? 'admin-filter-btn--active' : ''}`}
+                  onClick={() => setDealFilter('active')}
+                >
+                  ✅ Active <span className="admin-filter-count">{activeDealsCount}</span>
+                </button>
+                <button
+                  id="filter-hidden"
+                  className={`admin-filter-btn admin-filter-btn--muted ${dealFilter === 'hidden' ? 'admin-filter-btn--active' : ''}`}
+                  onClick={() => setDealFilter('hidden')}
+                >
+                  🚫 Hidden <span className="admin-filter-count">{hiddenDealsCount}</span>
+                </button>
+              </div>
+
               <DealGrid
-                deals={deals}
+                deals={filteredDeals}
                 loading={loading}
                 isAdmin
                 onEdit={openEdit}

@@ -12,19 +12,28 @@ interface DealCardProps {
 }
 
 const BADGE_CLASS: Record<string, string> = {
-  'Limited Time':    'badge-limited',
-  'Clearance':       'badge-clearance',
-  'Near Expiry':     'badge-near-expiry',
-  'Franchise Deal':  'badge-franchise',
   'Store Clearance': 'badge-store-clearance',
-  'Hot Deal':        'badge-hot',
+  'Franchise Deal':  'badge-franchise',
+  'Manager Special': 'badge-hot',
+  'NearExpiry Deal': 'badge-near-expiry',
   'Weekend Special': 'badge-weekend',
+  'Limited Time':    'badge-limited',
 };
 
 const CATEGORY_ICONS: Record<string, string> = {
-  Snacks: '🍿', Drinks: '🥤', Dairy: '🥛', Frozen: '🧊',
-  Bakery: '🥐', 'Personal Care': '🧴', Household: '🏠',
-  Candy: '🍬', Health: '💊', Other: '📦',
+  Bakery:              '🥐',
+  Beverages:           '🥤',
+  Chips:               '🍟',
+  'Chocolates & Candy':'🍫',
+  'Cleaning GM':       '🧹',
+  'Dairy Cooler':      '🥛',
+  Frozen:              '🧊',
+  Grocery:             '🛒',
+  Medicine:            '💊',
+  Pet:                 '🐾',
+  Snacks:              '🍿',
+  'Prepared Foods':    '🍱',
+  Alcohol:             '🍺',
 };
 
 export default function DealCard({ deal, onEdit, onDelete, onToggle, isAdmin }: DealCardProps) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Deal } from '@/lib/types';
-import { subscribeToActiveDeals } from '@/lib/deals';
+import { subscribeToActiveDeals, isExpired } from '@/lib/deals';
 import DealGrid from '@/components/DealGrid';
 import CategoryFilter from '@/components/CategoryFilter';
 import SearchBar from '@/components/SearchBar';
@@ -18,11 +18,7 @@ export default function PublicPage() {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
 
   const unexpiredDeals = useMemo(() => {
-    const now = Date.now();
-    return deals.filter(d => {
-      if (!d.expiryDate) return true;
-      return new Date(d.expiryDate).getTime() > now;
-    });
+    return deals.filter(d => !isExpired(d.expiryDate));
   }, [deals]);
 
   const categories = useMemo(() => {

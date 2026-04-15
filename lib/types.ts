@@ -1,23 +1,25 @@
 export type DealBadge =
-  | 'Limited Time'
-  | 'Clearance'
-  | 'Near Expiry'
-  | 'Franchise Deal'
   | 'Store Clearance'
-  | 'Hot Deal'
-  | 'Weekend Special';
+  | 'Franchise Deal'
+  | 'Manager Special'
+  | 'NearExpiry Deal'
+  | 'Weekend Special'
+  | 'Limited Time';
 
 export type DealCategory =
-  | 'Snacks'
-  | 'Drinks'
-  | 'Dairy'
-  | 'Frozen'
   | 'Bakery'
-  | 'Personal Care'
-  | 'Household'
-  | 'Candy'
-  | 'Health'
-  | 'Other';
+  | 'Beverages'
+  | 'Chips'
+  | 'Chocolates & Candy'
+  | 'Cleaning GM'
+  | 'Dairy Cooler'
+  | 'Frozen'
+  | 'Grocery'
+  | 'Medicine'
+  | 'Pet'
+  | 'Snacks'
+  | 'Prepared Foods'
+  | 'Alcohol';
 
 export type SortOption =
   | 'newest'

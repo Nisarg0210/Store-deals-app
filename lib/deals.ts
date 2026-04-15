@@ -185,8 +185,16 @@ export function getUrgencyStatus(expiryDate: string | undefined): { label: strin
   return null;
 }
 
-/** Check if a deal has reached its expiry date */
+/** Check if a deal has passed its expiry date.
+ *  A deal set to expire on "2026-04-16" stays visible until the
+ *  END of that day (23:59:59 local time), then disappears on Apr 17.
+ */
 export function isExpired(expiryDate: string | undefined): boolean {
   if (!expiryDate) return false;
-  return new Date(expiryDate).getTime() <= Date.now();
+  // Parse the date portion only (YYYY-MM-DD or full ISO string)
+  const dateOnly = expiryDate.split('T')[0]; // e.g. "2026-04-16"
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  // End of day in LOCAL time: 23:59:59.999
+  const endOfDay = new Date(year, month - 1, day, 23, 59, 59, 999);
+  return Date.now() > endOfDay.getTime();
 }
