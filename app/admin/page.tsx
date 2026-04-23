@@ -200,7 +200,7 @@ function AdminDashboard({ user }: { user: User }) {
             </>
           ) : (
             <div className="qr-page-layout">
-              <QRCodePanel url={publicUrl} storeName="The Market ON James North" />
+              <QRCodePanel url={`${publicUrl}?ref=qr`} storeName="The Market ON James North" />
               <div className="qr-instructions card">
                 <h3>📋 How to use</h3>
                 <ol>
