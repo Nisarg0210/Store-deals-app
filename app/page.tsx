@@ -7,11 +7,13 @@ import DealGrid from '@/components/DealGrid';
 import CategoryFilter from '@/components/CategoryFilter';
 import SearchBar from '@/components/SearchBar';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
+import LoyaltyModal from '@/components/LoyaltyModal';
 
 export default function PublicPage() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [loyaltyOpen, setLoyaltyOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -180,6 +182,20 @@ export default function PublicPage() {
           <a href="/admin" className="public-footer__admin-link">Staff sign in</a>
         </div>
       </footer>
+
+      {/* ── Floating Loyalty Button ───────────────────────────────────── */}
+      <button
+        id="loyalty-fab"
+        className="loyalty-fab"
+        onClick={() => setLoyaltyOpen(true)}
+        aria-label="Open loyalty card"
+      >
+        <span className="loyalty-fab__icon">🎁</span>
+        <span className="loyalty-fab__label">My Loyalty</span>
+      </button>
+
+      {/* ── Loyalty Modal ─────────────────────────────────────────────── */}
+      {loyaltyOpen && <LoyaltyModal onClose={() => setLoyaltyOpen(false)} />}
     </>
   );
 }

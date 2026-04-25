@@ -138,6 +138,13 @@ function AdminDashboard({ user }: { user: User }) {
             >
               🔲 QR Code
             </button>
+            <button
+              id="tab-scanner"
+              className={`tab-btn`}
+              onClick={() => window.location.href = '/admin/scanner'}
+            >
+              📷 Loyalty Scanner
+            </button>
           </div>
         </div>
       </div>
