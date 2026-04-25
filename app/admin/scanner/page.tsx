@@ -5,6 +5,7 @@ import AdminGuard from '@/components/AdminGuard';
 import {
   getCustomerData,
   awardPoints,
+  subtractPoints,
   redeemPoints,
   MIN_REDEEM,
   POINTS_PER_DOLLAR_REDEEM,
@@ -15,7 +16,7 @@ import {
 type ScannerState = 'scanning' | 'found' | 'awarding' | 'redeeming' | 'done';
 
 interface ActionResult {
-  type: 'award' | 'redeem';
+  type: 'award' | 'redeem' | 'subtract';
   pointsChanged: number;
   dollarValue?: number;
   newBalance: number;
@@ -162,6 +163,28 @@ function QrScannerPage() {
     }
   }, [purchaseAmount, scannedId]);
 
+  /* ── Subtract Points (Correct Mistake) ───────────────────────── */
+  const handleSubtract = useCallback(async () => {
+    const amount = parseFloat(purchaseAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setActionError('Please enter a valid purchase amount to subtract.');
+      return;
+    }
+    setActionError('');
+    setActionLoading(true);
+    try {
+      const removed = await subtractPoints(scannedId, amount);
+      const fresh = await getCustomerData(scannedId);
+      setCustomer(fresh);
+      setActionResult({ type: 'subtract', pointsChanged: removed, newBalance: fresh?.points ?? 0 });
+      setScannerState('done');
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : 'Failed to subtract points.');
+    } finally {
+      setActionLoading(false);
+    }
+  }, [purchaseAmount, scannedId]);
+
   /* ── Redeem Points ───────────────────────────────────────────── */
   const handleRedeem = useCallback(async () => {
     if (!customer) return;
@@ -242,11 +265,11 @@ function QrScannerPage() {
                       {customer.authProvider === 'email' ? `📧 ${customer.email ?? 'Secured Account'}` : '👤 Guest Customer'}
                     </div>
                     <div className="scanner-customer-points">
-                      <span className="scanner-points-val">{(customer.points ?? 0).toLocaleString()}</span>
+                      <span className="scanner-points-val">{(customer.points ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                       <span className="scanner-points-label">points</span>
                     </div>
                     <div className="scanner-points-worth">
-                      Worth ${((customer.points ?? 0) / POINTS_PER_DOLLAR_REDEEM).toFixed(2)} in rewards
+                      Worth ${Math.floor((customer.points ?? 0) / POINTS_PER_DOLLAR_REDEEM).toFixed(2)} in rewards
                     </div>
                   </div>
                 </div>
@@ -257,10 +280,10 @@ function QrScannerPage() {
 
                 {/* Award section */}
                 <div className="scanner-action-section">
-                  <h3 className="scanner-action-title">➕ Award Points</h3>
-                  <p className="scanner-action-hint">Enter the customer&apos;s purchase total. They earn 1 point per $1 spent.</p>
-                  <div className="scanner-award-row">
-                    <div style={{ position: 'relative', flex: 1 }}>
+                  <h3 className="scanner-action-title">➕ Manage Points</h3>
+                  <p className="scanner-action-hint">Enter the purchase total. Earn 1 point per $1 spent.</p>
+                  <div className="scanner-award-row" style={{ flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', flex: '1 1 100%' }}>
                       <span className="scanner-dollar-sign">$</span>
                       <input
                         id="scanner-purchase-amount"
@@ -273,14 +296,27 @@ function QrScannerPage() {
                         step="0.01"
                       />
                     </div>
-                    <button
-                      id="scanner-award-btn"
-                      className="btn btn-success"
-                      onClick={handleAward}
-                      disabled={actionLoading || !purchaseAmount}
-                    >
-                      {actionLoading ? '⏳' : '➕ Add Points'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                      <button
+                        id="scanner-award-btn"
+                        className="btn btn-success"
+                        style={{ flex: 2, justifyContent: 'center' }}
+                        onClick={handleAward}
+                        disabled={actionLoading || !purchaseAmount}
+                      >
+                        {actionLoading ? '⏳' : '➕ Add Points'}
+                      </button>
+                      <button
+                        id="scanner-subtract-btn"
+                        className="btn btn-danger"
+                        style={{ flex: 1, justifyContent: 'center' }}
+                        onClick={handleSubtract}
+                        disabled={actionLoading || !purchaseAmount}
+                        title="Correct a mistake"
+                      >
+                        {actionLoading ? '⏳' : '➖ Undo'}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -310,7 +346,7 @@ function QrScannerPage() {
                     </>
                   ) : (
                     <div className="scanner-redeem-locked">
-                      <span>🔒 Needs {MIN_REDEEM - (customer.points ?? 0)} more pts for a ${(MIN_REDEEM / POINTS_PER_DOLLAR_REDEEM).toFixed(0)} reward</span>
+                      <span>🔒 Needs {Math.ceil(MIN_REDEEM - (customer.points ?? 0))} more pts for a ${(MIN_REDEEM / POINTS_PER_DOLLAR_REDEEM).toFixed(0)} reward</span>
                       <div className="loyalty-progress-bar" style={{ marginTop: '0.5rem' }}>
                         <div
                           className="loyalty-progress-fill"
@@ -342,29 +378,39 @@ function QrScannerPage() {
         {scannerState === 'done' && actionResult && (
           <div className="scanner-card card scanner-success-card">
             <div className="scanner-success-icon">
-              {actionResult.type === 'award' ? '✅' : '🎉'}
+              {actionResult.type === 'award' ? '✅' : actionResult.type === 'subtract' ? '↩️' : '🎉'}
             </div>
             {actionResult.type === 'award' ? (
               <>
                 <h2 className="scanner-success-title">Points Awarded!</h2>
                 <p className="scanner-success-detail">
-                  <strong>+{actionResult.pointsChanged} points</strong> added successfully.
+                  <strong>+{actionResult.pointsChanged.toLocaleString(undefined, { maximumFractionDigits: 2 })} points</strong> added successfully.
                 </p>
                 <div className="scanner-success-balance">
-                  New Balance: <strong>{actionResult.newBalance.toLocaleString()} pts</strong>
+                  New Balance: <strong>{actionResult.newBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} pts</strong>
+                </div>
+              </>
+            ) : actionResult.type === 'subtract' ? (
+              <>
+                <h2 className="scanner-success-title">Points Removed</h2>
+                <p className="scanner-success-detail">
+                  <strong>-{actionResult.pointsChanged.toLocaleString(undefined, { maximumFractionDigits: 2 })} points</strong> deducted as a correction.
+                </p>
+                <div className="scanner-success-balance" style={{ background: 'rgba(239, 68, 68, 0.12)', color: 'var(--red)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                  New Balance: <strong>{actionResult.newBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} pts</strong>
                 </div>
               </>
             ) : (
               <>
                 <h2 className="scanner-success-title">Reward Redeemed!</h2>
                 <p className="scanner-success-detail">
-                  <strong>{actionResult.pointsChanged} points</strong> deducted.
+                  <strong>{actionResult.pointsChanged.toLocaleString(undefined, { maximumFractionDigits: 2 })} points</strong> deducted.
                 </p>
                 <div className="scanner-success-balance scanner-success-balance--redeem">
                   Apply <strong>${actionResult.dollarValue?.toFixed(2)} discount</strong> on the register now.
                 </div>
                 <div className="scanner-success-balance" style={{ marginTop: '0.5rem' }}>
-                  Remaining Balance: <strong>{actionResult.newBalance.toLocaleString()} pts</strong>
+                  Remaining Balance: <strong>{actionResult.newBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} pts</strong>
                 </div>
               </>
             )}

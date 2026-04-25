@@ -35,7 +35,7 @@ export async function awardPoints(
   customerId: string,
   purchaseAmount: number
 ): Promise<number> {
-  const pointsToAdd = Math.floor(purchaseAmount);
+  const pointsToAdd = Math.round(purchaseAmount * 100) / 100;
   if (pointsToAdd <= 0) return 0;
 
   const ref = doc(db, CUSTOMERS, customerId);
@@ -56,6 +56,35 @@ export async function awardPoints(
     });
   }
   return pointsToAdd;
+}
+
+/**
+ * Subtract points (to correct an accidental entry).
+ */
+export async function subtractPoints(
+  customerId: string,
+  amount: number
+): Promise<number> {
+  const pointsToSubtract = Math.round(amount * 100) / 100;
+  if (pointsToSubtract <= 0) return 0;
+
+  const ref = doc(db, CUSTOMERS, customerId);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    throw new Error('Customer not found.');
+  }
+
+  const currentPoints = snap.data().points ?? 0;
+  // Don't let it go below 0
+  const actualDeduction = Math.min(currentPoints, pointsToSubtract);
+
+  await updateDoc(ref, {
+    points: increment(-actualDeduction),
+    lastVisitAt: serverTimestamp(),
+  });
+  
+  return actualDeduction;
 }
 
 /**

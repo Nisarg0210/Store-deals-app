@@ -158,11 +158,11 @@ export default function LoyaltyModal({ onClose }: Props) {
               {/* Points Balance */}
               <div className="loyalty-balance-card">
                 <span className="loyalty-balance-label">Your Points Balance</span>
-                <span className="loyalty-balance-points">{points.toLocaleString()}</span>
+                <span className="loyalty-balance-points">{points.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                 <span className="loyalty-balance-sub">
                   {canRedeem
                     ? `🎉 Worth $${dollarValue} off! Ask cashier to redeem.`
-                    : `Earn ${MIN_REDEEM - points} more pts to unlock $${(MIN_REDEEM / POINTS_PER_DOLLAR_REDEEM).toFixed(0)} off`}
+                    : `Earn ${Math.ceil(MIN_REDEEM - points)} more pts to unlock $${(MIN_REDEEM / POINTS_PER_DOLLAR_REDEEM).toFixed(0)} off`}
                 </span>
                 {canRedeem && (
                   <div className="loyalty-redeem-badge">Ready to Redeem!</div>
@@ -193,7 +193,7 @@ export default function LoyaltyModal({ onClose }: Props) {
                     style={{ width: `${Math.min(100, (points / MIN_REDEEM) * 100)}%` }}
                   />
                 </div>
-                <span className="loyalty-progress-label">{points} / {MIN_REDEEM} pts for next reward</span>
+                <span className="loyalty-progress-label">{points.toLocaleString(undefined, { maximumFractionDigits: 2 })} / {MIN_REDEEM} pts for next reward</span>
               </div>
 
               <div className="divider" style={{ margin: '1.25rem 0' }} />
