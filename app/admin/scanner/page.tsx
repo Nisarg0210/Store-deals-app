@@ -8,7 +8,9 @@ import {
   subtractPoints,
   redeemPoints,
   MIN_REDEEM,
+  REDEEM_150,
   POINTS_PER_DOLLAR_REDEEM,
+  POINTS_PER_DOLLAR_EARN,
   CustomerData,
 } from '@/lib/adminLoyalty';
 
@@ -40,6 +42,7 @@ function QrScannerPage() {
   const [actionResult, setActionResult] = useState<ActionResult | null>(null);
   const [actionError, setActionError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [redeemAmount, setRedeemAmount] = useState<100 | 150>(100);
 
   /* ── Load jsQR from CDN ──────────────────────────────────────── */
   useEffect(() => {
@@ -135,6 +138,7 @@ function QrScannerPage() {
     setPurchaseAmount('');
     setActionResult(null);
     setActionError('');
+    setRedeemAmount(100);
     setScannerState('scanning');
     startCamera().then(() => {
       animRef.current = requestAnimationFrame(scan);
@@ -186,21 +190,21 @@ function QrScannerPage() {
   }, [purchaseAmount, scannedId]);
 
   /* ── Redeem Points ───────────────────────────────────────────── */
-  const handleRedeem = useCallback(async () => {
+  const handleRedeem = useCallback(async (pts: 100 | 150) => {
     if (!customer) return;
-    if (customer.points < MIN_REDEEM) {
-      setActionError(`Insufficient points. Customer needs at least ${MIN_REDEEM} pts.`);
+    if (customer.points < pts) {
+      setActionError(`Insufficient points. Customer needs at least ${pts} pts.`);
       return;
     }
     setActionError('');
     setActionLoading(true);
     try {
-      const dollars = await redeemPoints(scannedId, MIN_REDEEM);
+      const dollars = await redeemPoints(scannedId, pts);
       const fresh = await getCustomerData(scannedId);
       setCustomer(fresh);
       setActionResult({
         type: 'redeem',
-        pointsChanged: MIN_REDEEM,
+        pointsChanged: pts,
         dollarValue: dollars,
         newBalance: fresh?.points ?? 0,
       });
@@ -281,7 +285,11 @@ function QrScannerPage() {
                 {/* Award section */}
                 <div className="scanner-action-section">
                   <h3 className="scanner-action-title">➕ Manage Points</h3>
-                  <p className="scanner-action-hint">Enter the purchase total. Earn 1 point per $1 spent.</p>
+                  <p className="scanner-action-hint">
+                    Enter the purchase total. Earn <strong>2 points per $1</strong> spent (rounded to nearest dollar).
+                    {purchaseAmount && !isNaN(parseFloat(purchaseAmount)) && parseFloat(purchaseAmount) > 0 && (
+                      <> &nbsp;→ <strong>+{Math.round(parseFloat(purchaseAmount)) * POINTS_PER_DOLLAR_EARN} pts</strong> for <strong>${Math.round(parseFloat(purchaseAmount))}</strong></>                    )}
+                  </p>
                   <div className="scanner-award-row" style={{ flexWrap: 'wrap' }}>
                     <div style={{ position: 'relative', flex: '1 1 100%' }}>
                       <span className="scanner-dollar-sign">$</span>
@@ -328,17 +336,33 @@ function QrScannerPage() {
                   {(customer.points ?? 0) >= MIN_REDEEM ? (
                     <>
                       <div className="scanner-redeem-ready">
-                        <span>✅ Customer has enough points!</span>
-                        <span>Redeem <strong>{MIN_REDEEM} pts</strong> for <strong>${(MIN_REDEEM / POINTS_PER_DOLLAR_REDEEM).toFixed(0)} off</strong></span>
+                        <span>✅ Customer has enough points to redeem!</span>
                       </div>
+                      {/* 100 pts = $1 off */}
                       <button
-                        id="scanner-redeem-btn"
+                        id="scanner-redeem-100-btn"
                         className="btn btn-primary"
-                        style={{ width: '100%', justifyContent: 'center' }}
-                        onClick={handleRedeem}
+                        style={{ width: '100%', justifyContent: 'center', marginTop: '0.75rem' }}
+                        onClick={() => handleRedeem(100)}
                         disabled={actionLoading}
                       >
-                        {actionLoading ? '⏳ Processing…' : `🎁 Redeem ${MIN_REDEEM} pts → $${(MIN_REDEEM / POINTS_PER_DOLLAR_REDEEM).toFixed(0)} Off`}
+                        {actionLoading ? '⏳ Processing…' : `🎁 Redeem 100 pts → $1.00 Off`}
+                      </button>
+                      {/* 150 pts = $1.50 off — enabled only when customer has ≥150 pts */}
+                      <button
+                        id="scanner-redeem-150-btn"
+                        className="btn btn-secondary"
+                        style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}
+                        onClick={() => handleRedeem(150)}
+                        disabled={actionLoading || (customer.points ?? 0) < REDEEM_150}
+                        title={(customer.points ?? 0) < REDEEM_150 ? `Needs ${REDEEM_150 - (customer.points ?? 0)} more pts` : ''}
+                      >
+                        {actionLoading
+                          ? '⏳ Processing…'
+                          : (customer.points ?? 0) >= REDEEM_150
+                            ? `💎 Redeem 150 pts → $1.50 Off`
+                            : `🔒 150 pts → $1.50 Off (${REDEEM_150 - (customer.points ?? 0)} more needed)`
+                        }
                       </button>
                       <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                         After clicking, manually apply the discount on the cash register.
@@ -346,7 +370,7 @@ function QrScannerPage() {
                     </>
                   ) : (
                     <div className="scanner-redeem-locked">
-                      <span>🔒 Needs {Math.ceil(MIN_REDEEM - (customer.points ?? 0))} more pts for a ${(MIN_REDEEM / POINTS_PER_DOLLAR_REDEEM).toFixed(0)} reward</span>
+                      <span>🔒 Needs {Math.ceil(MIN_REDEEM - (customer.points ?? 0))} more pts to unlock $1.00 reward</span>
                       <div className="loyalty-progress-bar" style={{ marginTop: '0.5rem' }}>
                         <div
                           className="loyalty-progress-fill"

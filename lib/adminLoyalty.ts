@@ -28,14 +28,15 @@ export async function getCustomerData(customerId: string): Promise<CustomerData 
 
 /**
  * Award points to a customer based on purchase amount.
- * Rule: 1 point per $1 spent (rounded down).
+ * Rule: 2 points per $1 spent (purchase amount rounded to nearest dollar first).
  * Creates the customer document if it doesn't already exist.
  */
 export async function awardPoints(
   customerId: string,
   purchaseAmount: number
 ): Promise<number> {
-  const pointsToAdd = Math.round(purchaseAmount * 100) / 100;
+  const roundedDollars = Math.round(purchaseAmount); // e.g. $20.29 → 20, $20.55 → 21
+  const pointsToAdd = roundedDollars * POINTS_PER_DOLLAR_EARN;
   if (pointsToAdd <= 0) return 0;
 
   const ref = doc(db, CUSTOMERS, customerId);
@@ -60,12 +61,14 @@ export async function awardPoints(
 
 /**
  * Subtract points (to correct an accidental entry).
+ * Mirrors awardPoints rounding: purchase amount rounded to nearest dollar × 2.
  */
 export async function subtractPoints(
   customerId: string,
   amount: number
 ): Promise<number> {
-  const pointsToSubtract = Math.round(amount * 100) / 100;
+  const roundedDollars = Math.round(amount);
+  const pointsToSubtract = roundedDollars * POINTS_PER_DOLLAR_EARN;
   if (pointsToSubtract <= 0) return 0;
 
   const ref = doc(db, CUSTOMERS, customerId);
@@ -83,13 +86,13 @@ export async function subtractPoints(
     points: increment(-actualDeduction),
     lastVisitAt: serverTimestamp(),
   });
-  
+
   return actualDeduction;
 }
 
 /**
  * Redeem points from a customer's balance.
- * Rule: 100 points = $1.00 discount.
+ * Rule: every 100 points = $1.00 discount.
  * Returns the dollar value redeemed, or throws if insufficient balance.
  */
 export async function redeemPoints(
@@ -110,10 +113,11 @@ export async function redeemPoints(
     lastVisitAt: serverTimestamp(),
   });
 
-  return pointsToRedeem / 100; // dollars
+  return pointsToRedeem / POINTS_PER_DOLLAR_REDEEM; // dollars
 }
 
 /** Constants for the reward thresholds */
-export const POINTS_PER_DOLLAR_EARN = 1;     // earn 1 pt per $1 spent
+export const POINTS_PER_DOLLAR_EARN = 2;     // earn 2 pts per $1 spent
 export const POINTS_PER_DOLLAR_REDEEM = 100; // 100 pts = $1 off
-export const MIN_REDEEM = 500;               // minimum 500 pts to redeem ($5 off)
+export const MIN_REDEEM = 100;               // minimum 100 pts to redeem ($1 off)
+export const REDEEM_150 = 150;               // optional: 150 pts = $1.50 off
