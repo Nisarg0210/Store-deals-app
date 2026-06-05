@@ -1,0 +1,101 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useAuthState } from '@/lib/auth';
+import {
+  getStoredGuestId,
+  createRegisteredMember,
+  getMemberById,
+} from '@/lib/rewards';
+import RewardsOnboarding from '@/components/RewardsOnboarding';
+import RewardsWallet from '@/components/RewardsWallet';
+
+export default function RewardsPage() {
+  const { user, loading: authLoading } = useAuthState();
+  const [memberId, setMemberId] = useState<string | null>(null);
+  const [mode, setMode] = useState<'guest' | 'registered' | null>(null);
+  const [initLoading, setInitLoading] = useState(true);
+
+  useEffect(() => {
+    async function init() {
+      if (authLoading) return;
+
+      if (user) {
+        await createRegisteredMember(
+          user.uid,
+          user.email ?? '',
+          user.displayName ?? undefined
+        );
+        setMemberId(user.uid);
+        setMode('registered');
+        setInitLoading(false);
+        return;
+      }
+
+      const guestId = getStoredGuestId();
+      if (guestId) {
+        const member = await getMemberById(guestId);
+        if (member) {
+          setMemberId(guestId);
+          setMode('guest');
+          setInitLoading(false);
+          return;
+        }
+      }
+
+      setInitLoading(false);
+    }
+
+    init();
+  }, [user, authLoading]);
+
+  function handleReady(id: string, m: 'guest' | 'registered') {
+    setMemberId(id);
+    setMode(m);
+  }
+
+  const showWallet = memberId && mode;
+
+  return (
+    <>
+      <div className="bg-mesh" />
+
+      <div className="public-topbar">
+        <div className="container public-topbar__inner">
+          <Link href="/" className="public-topbar__brand">
+            <span className="public-topbar__mark" aria-hidden>🏪</span>
+            <span>
+              <span className="public-topbar__name">The Market ON James North</span>
+              <span className="public-topbar__tagline">Rewards program</span>
+            </span>
+          </Link>
+          <Link href="/" className="rewards-nav-link">
+            ← Deals
+          </Link>
+        </div>
+      </div>
+
+      <main className="rewards-page">
+        <div className="container">
+          {initLoading || authLoading ? (
+            <div className="rewards-page__loading">
+              <div className="skeleton" style={{ height: 120, borderRadius: 16, maxWidth: 480, margin: '0 auto' }} />
+            </div>
+          ) : showWallet ? (
+            <RewardsWallet memberId={memberId} mode={mode} />
+          ) : (
+            <RewardsOnboarding onReady={handleReady} />
+          )}
+        </div>
+      </main>
+
+      <footer className="public-footer">
+        <div className="container">
+          <p className="public-footer__text">The Market ON James North · Rewards</p>
+          <Link href="/admin" className="public-footer__admin-link">Staff sign in</Link>
+        </div>
+      </footer>
+    </>
+  );
+}

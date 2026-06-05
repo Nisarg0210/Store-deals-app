@@ -1,0 +1,134 @@
+'use client';
+
+import { Deal } from '@/lib/types';
+import { getDiscountPercent, getExpiryLabel, getUrgencyStatus, isExpired } from '@/lib/deals';
+
+interface DealCardProps {
+  deal: Deal;
+  onEdit?: (deal: Deal) => void;
+  onDelete?: (deal: Deal) => void;
+  onToggle?: (deal: Deal) => void;
+  isAdmin?: boolean;
+}
+
+const BADGE_CLASS: Record<string, string> = {
+  'Store Clearance': 'badge-store-clearance',
+  'Franchise Deal':  'badge-franchise',
+  'Manager Special': 'badge-hot',
+  'NearExpiry Deal': 'badge-near-expiry',
+  'Weekend Special': 'badge-weekend',
+  'Limited Time':    'badge-limited',
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+  Bakery:              '🥐',
+  Beverages:           '🥤',
+  Chips:               '🍟',
+  'Chocolates & Candy':'🍫',
+  'Cleaning GM':       '🧹',
+  'Dairy Cooler':      '🥛',
+  Frozen:              '🧊',
+  Grocery:             '🛒',
+  Medicine:            '💊',
+  Pet:                 '🐾',
+  Snacks:              '🍿',
+  'Prepared Foods':    '🍱',
+  Alcohol:             '🍺',
+};
+
+export default function DealCard({ deal, onEdit, onDelete, onToggle, isAdmin }: DealCardProps) {
+  const discount = getDiscountPercent(deal.originalPrice, deal.discountedPrice);
+  const urgency = getUrgencyStatus(deal.expiryDate);
+  const expiryLabel = getExpiryLabel(deal.expiryDate);
+  const categoryIcon = CATEGORY_ICONS[deal.category] ?? '📦';
+
+  return (
+    <div className={`deal-card card ${(!deal.active || isExpired(deal.expiryDate)) && isAdmin ? 'deal-card--inactive' : ''}`}
+         style={{ animationDelay: '0ms' }}>
+
+      {/* Image / Placeholder */}
+      <div className="deal-card__image">
+        {deal.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={deal.imageUrl} alt={deal.name} />
+        ) : (
+          <div className="deal-card__image-placeholder">
+            <span>{categoryIcon}</span>
+          </div>
+        )}
+
+        {/* Discount Badge */}
+        {discount > 0 && (
+          <div className="deal-card__discount">
+            -{discount}%
+          </div>
+        )}
+
+        {/* Urgency Badge */}
+        {urgency && (
+          <div className={`deal-card__urgency deal-card__urgency--${urgency.type}`}>
+            {urgency.label}
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="deal-card__body">
+        <div className={`deal-card__meta ${!isAdmin ? 'deal-card__meta--public' : ''}`}>
+          {isAdmin && (
+            <span className={`badge ${BADGE_CLASS[deal.badge] ?? ''}`}>●&nbsp;{deal.badge}</span>
+          )}
+          <span className="deal-card__category">{categoryIcon} {deal.category}</span>
+        </div>
+
+        {isAdmin && (
+          <div className="deal-card__kept-by" title={deal.keptByEmail ?? undefined}>
+            <span className="deal-card__kept-by-icon" aria-hidden>👤</span>
+            <span>
+              Kept by <strong>{deal.keptByName?.trim() || '—'}</strong>
+            </span>
+          </div>
+        )}
+
+        <h3 className="deal-card__name">{deal.name}</h3>
+        <p className="deal-card__desc">{deal.description}</p>
+
+        <div className="deal-card__pricing">
+          <span className="deal-card__price-new">${deal.discountedPrice.toFixed(2)}</span>
+          {deal.originalPrice !== deal.discountedPrice && (
+            <span className="deal-card__price-old">${deal.originalPrice.toFixed(2)}</span>
+          )}
+        </div>
+
+        {expiryLabel && !urgency && (
+          <div className="deal-card__expiry">🕐 {expiryLabel}</div>
+        )}
+
+        {/* Admin controls */}
+        {isAdmin && (
+          <div className="deal-card__actions">
+            <button
+              className={`btn btn-sm ${deal.active ? 'btn-secondary' : 'btn-success'}`}
+              onClick={() => onToggle?.(deal)}
+              title={deal.active ? 'Deactivate' : 'Activate'}
+            >
+              {deal.active ? '⏸ Hide' : '▶ Show'}
+            </button>
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={() => onEdit?.(deal)}
+            >
+              ✏️ Edit
+            </button>
+            <button
+              className="btn btn-sm btn-danger"
+              onClick={() => onDelete?.(deal)}
+            >
+              🗑
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
