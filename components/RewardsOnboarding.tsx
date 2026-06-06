@@ -34,8 +34,13 @@ export default function RewardsOnboarding({ onReady }: RewardsOnboardingProps) {
       }
       await createGuestMember(guestId);
       onReady(guestId, 'guest');
-    } catch {
-      setError('Could not start rewards wallet. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      setError(
+        msg.includes('permission') || msg.includes('PERMISSION_DENIED')
+          ? 'Rewards database is not configured yet. Ask staff to update Firestore rules, then try again.'
+          : 'Could not start rewards wallet. Please try again.'
+      );
     } finally {
       setLoading(false);
     }

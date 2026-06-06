@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuthState } from '@/lib/auth';
 import {
   getStoredGuestId,
+  clearStoredGuestId,
   createRegisteredMember,
   getMemberById,
 } from '@/lib/rewards';
@@ -21,30 +22,34 @@ export default function RewardsPage() {
     async function init() {
       if (authLoading) return;
 
-      if (user) {
-        await createRegisteredMember(
-          user.uid,
-          user.email ?? '',
-          user.displayName ?? undefined
-        );
-        setMemberId(user.uid);
-        setMode('registered');
-        setInitLoading(false);
-        return;
-      }
-
-      const guestId = getStoredGuestId();
-      if (guestId) {
-        const member = await getMemberById(guestId);
-        if (member) {
-          setMemberId(guestId);
-          setMode('guest');
-          setInitLoading(false);
+      try {
+        if (user) {
+          await createRegisteredMember(
+            user.uid,
+            user.email ?? '',
+            user.displayName ?? undefined
+          );
+          setMemberId(user.uid);
+          setMode('registered');
           return;
         }
-      }
 
-      setInitLoading(false);
+        const guestId = getStoredGuestId();
+        if (guestId) {
+          const member = await getMemberById(guestId);
+          if (member) {
+            setMemberId(guestId);
+            setMode('guest');
+            return;
+          }
+          // Stale local ID (e.g. after rules change) — clear and show onboarding
+          clearStoredGuestId();
+        }
+      } catch {
+        clearStoredGuestId();
+      } finally {
+        setInitLoading(false);
+      }
     }
 
     init();

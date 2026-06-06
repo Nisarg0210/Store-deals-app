@@ -48,11 +48,20 @@ export function useAuthState() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let settled = false;
     const unsubscribe = onAuthStateChanged(auth, (u) => {
+      settled = true;
       setUser(u);
       setLoading(false);
     });
-    return unsubscribe;
+    // Avoid infinite skeleton if Firebase auth never resolves
+    const timeout = setTimeout(() => {
+      if (!settled) setLoading(false);
+    }, 5000);
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   return { user, loading };

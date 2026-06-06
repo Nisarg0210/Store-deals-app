@@ -143,11 +143,19 @@ export function parseMemberIdFromScan(data: string): string | null {
 /* ── Member CRUD ─────────────────────────────────────────────── */
 
 async function createUniqueShortCode(): Promise<string> {
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const code = generateShortCode();
-    const q = query(collection(db, MEMBERS_COLLECTION), where('shortCode', '==', code), limit(1));
-    const snap = await getDocs(q);
-    if (snap.empty) return code;
+  try {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const code = generateShortCode();
+      const q = query(collection(db, MEMBERS_COLLECTION), where('shortCode', '==', code), limit(1));
+      const snap = await getDocs(q);
+      if (snap.empty) return code;
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('permission') || msg.includes('PERMISSION_DENIED')) {
+      throw new Error('Firestore permission denied — rewards rules must be deployed.');
+    }
+    throw err;
   }
   throw new Error('Could not generate member code. Please try again.');
 }
