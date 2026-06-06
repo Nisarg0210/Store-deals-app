@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAuthState } from '@/lib/auth';
 import {
   getStoredGuestId,
@@ -12,7 +13,9 @@ import {
 import RewardsOnboarding from '@/components/RewardsOnboarding';
 import RewardsWallet from '@/components/RewardsWallet';
 
-export default function RewardsPage() {
+function RewardsPageContent() {
+  const searchParams = useSearchParams();
+  const signInView = searchParams.get('signin') === '1' ? 'login' as const : 'choose' as const;
   const { user, loading: authLoading } = useAuthState();
   const [memberId, setMemberId] = useState<string | null>(null);
   const [mode, setMode] = useState<'guest' | 'registered' | null>(null);
@@ -75,9 +78,14 @@ export default function RewardsPage() {
               <span className="public-topbar__tagline">Rewards program</span>
             </span>
           </Link>
-          <Link href="/" className="rewards-nav-link">
-            ← Deals
-          </Link>
+          <div className="public-topbar__actions">
+            <Link href="/rewards?signin=1" className="public-topbar__signin-link">
+              Sign in
+            </Link>
+            <Link href="/" className="rewards-nav-link">
+              ← Deals
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -90,7 +98,7 @@ export default function RewardsPage() {
           ) : showWallet ? (
             <RewardsWallet memberId={memberId} mode={mode} />
           ) : (
-            <RewardsOnboarding onReady={handleReady} />
+            <RewardsOnboarding onReady={handleReady} initialView={signInView} />
           )}
         </div>
       </main>
@@ -102,5 +110,21 @@ export default function RewardsPage() {
         </div>
       </footer>
     </>
+  );
+}
+
+export default function RewardsPage() {
+  return (
+    <Suspense fallback={
+      <div className="rewards-page">
+        <div className="container">
+          <div className="rewards-page__loading">
+            <div className="skeleton" style={{ height: 120, borderRadius: 16, maxWidth: 480, margin: '2rem auto' }} />
+          </div>
+        </div>
+      </div>
+    }>
+      <RewardsPageContent />
+    </Suspense>
   );
 }

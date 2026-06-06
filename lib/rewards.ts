@@ -119,6 +119,14 @@ export function clearStoredGuestId(): void {
 
 /* ── QR helpers ──────────────────────────────────────────────── */
 
+/** Compact QR payload — scans reliably on phone cameras (short + high contrast) */
+export const QR_PREFIX = 'JNREWARDS:';
+
+export function buildMemberQrPayload(shortCode: string): string {
+  return `${QR_PREFIX}${shortCode.trim().toUpperCase()}`;
+}
+
+/** @deprecated Use buildMemberQrPayload — kept for legacy QR codes */
 export function buildMemberQrUrl(memberId: string, origin?: string): string {
   const base = origin ?? (typeof window !== 'undefined' ? window.location.origin : '');
   return `${base}/rewards?member=${memberId}`;
@@ -128,6 +136,9 @@ export function parseMemberIdFromScan(data: string): string | null {
   const trimmed = data.trim();
   if (!trimmed) return null;
 
+  const compact = trimmed.match(/^JNREWARDS:([A-Z0-9]{6,10})$/i);
+  if (compact) return compact[1].toUpperCase();
+
   try {
     const url = new URL(trimmed);
     const member = url.searchParams.get('member');
@@ -136,6 +147,7 @@ export function parseMemberIdFromScan(data: string): string | null {
     // not a URL
   }
 
+  if (/^[A-Z0-9]{6,10}$/i.test(trimmed)) return trimmed.toUpperCase();
   if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed)) return trimmed;
   return null;
 }

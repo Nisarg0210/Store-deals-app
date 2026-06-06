@@ -13,10 +13,11 @@ import {
 
 interface RewardsOnboardingProps {
   onReady: (memberId: string, mode: 'guest' | 'registered') => void;
+  initialView?: 'choose' | 'login';
 }
 
-export default function RewardsOnboarding({ onReady }: RewardsOnboardingProps) {
-  const [mode, setMode] = useState<'choose' | 'register' | 'login'>('choose');
+export default function RewardsOnboarding({ onReady, initialView = 'choose' }: RewardsOnboardingProps) {
+  const [mode, setMode] = useState<'choose' | 'register' | 'login'>(initialView);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

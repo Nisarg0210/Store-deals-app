@@ -80,14 +80,22 @@ export default function RewardsStaffPanel({ user, onToast }: RewardsStaffPanelPr
     setScanning(true);
     try {
       const { Html5Qrcode } = await import('html5-qrcode');
-      const scanner = new Html5Qrcode(scanContainerId);
+      const scanner = new Html5Qrcode(scanContainerId, { verbose: false });
       scannerRef.current = scanner;
+
+      const viewWidth = Math.min(window.innerWidth, 480);
+      const boxSize = Math.max(200, Math.min(280, Math.floor(viewWidth * 0.82)));
 
       await scanner.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 220, height: 220 } },
+        {
+          fps: 15,
+          qrbox: { width: boxSize, height: boxSize },
+          aspectRatio: 1,
+          disableFlip: false,
+        },
         async (decoded) => {
-          await scanner.stop();
+          await scanner.stop().catch(() => {});
           scannerRef.current = null;
           setScanning(false);
           await loadMember(decoded);
@@ -96,7 +104,7 @@ export default function RewardsStaffPanel({ user, onToast }: RewardsStaffPanelPr
       );
     } catch {
       setScanning(false);
-      onToast('Camera access denied or unavailable. Enter code manually.', 'error');
+      onToast('Camera access denied or unavailable. Enter the member code below.', 'error');
     }
   }
 

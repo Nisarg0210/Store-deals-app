@@ -82,6 +82,9 @@ export default function PublicPage() {
             </span>
           </a>
           <div className="public-topbar__actions">
+            <a href="/rewards?signin=1" className="public-topbar__signin-link">
+              Sign in
+            </a>
             <a href="/rewards" className="public-topbar__rewards-link">
               ✦ Rewards
             </a>
