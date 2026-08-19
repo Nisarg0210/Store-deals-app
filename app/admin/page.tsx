@@ -10,6 +10,7 @@ import DealGrid from '@/components/DealGrid';
 import DealForm from '@/components/DealForm';
 import QRCodePanel from '@/components/QRCodePanel';
 import RewardsStaffPanel from '@/components/RewardsStaffPanel';
+import SpinWheel from '@/components/SpinWheel';
 import Toast from '@/components/Toast';
 
 // LoginForm moved to AdminGuard
@@ -30,7 +31,7 @@ function AdminDashboard({ user }: { user: User }) {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Deal | null>(null);
   const [toasts, setToasts] = useState<ToastState[]>([]);
-  const [tab, setTab] = useState<'deals' | 'qr' | 'rewards'>('deals');
+  const [tab, setTab] = useState<'deals' | 'qr' | 'rewards' | 'spin'>('deals');
   const [dealFilter, setDealFilter] = useState<'all' | 'active' | 'hidden'>('all');
 
   const publicUrl = typeof window !== 'undefined'
@@ -146,6 +147,13 @@ function AdminDashboard({ user }: { user: User }) {
             >
               ✦ Rewards
             </button>
+            <button
+              id="tab-spin"
+              className={`tab-btn ${tab === 'spin' ? 'tab-btn--active' : ''}`}
+              onClick={() => setTab('spin')}
+            >
+              🎡 Spin
+            </button>
           </div>
         </div>
       </div>
@@ -155,6 +163,10 @@ function AdminDashboard({ user }: { user: User }) {
         <div className="container">
           {tab === 'rewards' ? (
             <RewardsStaffPanel user={user} onToast={showToast} />
+          ) : tab === 'spin' ? (
+            <div className="admin-spin-wrap">
+              <SpinWheel />
+            </div>
           ) : tab === 'deals' ? (
             <>
               {/* Action bar */}

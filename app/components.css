@@ -1938,3 +1938,8 @@
     padding: 0.3rem 0.55rem;
   }
 }
+
+.admin-spin-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+}
